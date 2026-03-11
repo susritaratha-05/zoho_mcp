@@ -552,6 +552,10 @@ TOOL_SCHEMAS = [
                         "type": "string",
                         "description": "Leave record ID from get_leave_records.",
                     },
+                     "employee_email": {
+                        "type": "string",
+                        "description": "employee_email .",
+                    }, 
                     "cancellation_reason": {
                         "type": "string",
                         "description": "Reason for cancellation.",
