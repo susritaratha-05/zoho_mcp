@@ -1,4 +1,3 @@
-
 # import json
 # import sys
 # from pathlib import Path
@@ -17,15 +16,18 @@
 # logger = get_logger("mcp_server")
 # mcp    = FastMCP("pd-hr-chatbot", port=8001)
 
-
-# ZOHO_BASE = "https://people.zoho.in"
+# ZOHO_BASE = "https://people.zoho.in"  #put in .env file
 
 
 # def auth_header(token: str) -> dict:
 #     return {"Authorization": f"Zoho-oauthtoken {token}"}
 
 
-
+# # ══════════════════════════════════════════════════════════════════════════════
+# # TOOL 1 — Get Employee Record
+# # Endpoint: GET /api/forms/employee/getRecords
+# # Params  : searchColumn=EmailID, searchValue=<email>
+# # ══════════════════════════════════════════════════════════════════════════════
 # @mcp.tool()
 # async def get_employee_record(
 #     access_token:   str,
@@ -54,7 +56,7 @@
 #                 f"{ZOHO_BASE}/api/forms/employee/getRecords",
 #                 headers=auth_header(access_token),
 #                 params={
-#                     "searchColumn": "EmailID",
+#                     "searchColumn": "EMPLOYEEMAILALIAS",
 #                     "searchValue":  employee_email,
 #                     "limit":        "1",
 #                     "sIndex":       "1",
@@ -95,7 +97,12 @@
 #         return {"error": str(e)}
 
 
-
+# # ══════════════════════════════════════════════════════════════════════════════
+# # TOOL 2 — Get Leave Balance
+# # Endpoint: GET /people/api/v2/leavetracker/reports/user
+# # Params  : employee=<erecno (Long)>
+# # Scope   : ZOHOPEOPLE.leave.READ
+# # ══════════════════════════════════════════════════════════════════════════════
 # @mcp.tool()
 # async def get_leave_balance(
 #     access_token:     str,
@@ -158,6 +165,12 @@
 #         return {"error": str(e)}
 
 
+# # ══════════════════════════════════════════════════════════════════════════════
+# # TOOL 3 — Get Leave Records
+# # Endpoint: GET /people/api/v2/leavetracker/leaves/records
+# # Params  : from*, to*  (date strings)
+# # Scope   : ZOHOPEOPLE.leave.READ
+# # ══════════════════════════════════════════════════════════════════════════════
 # @mcp.tool()
 # async def get_leave_records(
 #     access_token:      str,
@@ -181,7 +194,7 @@
 
 #     today         = datetime.today()
 #     from_date     = f"01-Jan-{today.year}"
-#     to_date       = f"31-Dec-{today.year}"#today.strftime("%d-%b-%Y")
+#     to_date       = f"31-Dec-{today.year}"
 
 #     try:
 #         async with httpx.AsyncClient(timeout=20) as client:
@@ -194,10 +207,9 @@
 #                     "limit": number_of_records,
 #                 },
 #             )
-#         logger.info(f"FROM DATE{from_date}:{to_date}")
 #         logger.info(f"[Tool] Leave records status={resp.status_code} body={resp.text[:500]}")
 #         data = resp.json()
-#         logger.info(f"DATA {data}")
+
 #         raw     = data.get("records", {})
 #         records = []
 #         for rid, rdata in raw.items():
@@ -221,6 +233,12 @@
 #         return {"error": str(e)}
 
 
+# # ══════════════════════════════════════════════════════════════════════════════
+# # TOOL 4 — Apply Leave
+# # Endpoint: POST /people/api/forms/json/leave/insertRecord
+# # Params  : inputData={'Employee_ID':...,'Leavetype':...,'From':...,'To':...,'days':{...}}
+# # Scope   : ZOHOPEOPLE.leave.CREATE
+# # ══════════════════════════════════════════════════════════════════════════════
 # @mcp.tool()
 # async def apply_leave(
 #     access_token:     str,
@@ -313,6 +331,7 @@
 # @mcp.tool()
 # async def cancel_leave(
 #     access_token:        str,
+#     employee_email:      str,
 #     leave_record_id:     Any,
 #     cancellation_reason: str = "Cancelled by employee",
 # ) -> dict:
@@ -322,23 +341,44 @@
 
 #     Args:
 #         access_token        (str): Zoho OAuth access token.
+#         employee_email      (str):employee email
 #         leave_record_id     (str): Leave record ID from get_leave_records.
 #         cancellation_reason (str): Reason for cancellation.
 #     """
 #     logger.info(f"[Tool] cancel_leave | leave_record_id={leave_record_id}")
+#     logger.info(f"[Tool] leave record id {leave_record_id}")
+#     if not leave_record_id: 
+#         # get_leave_records(access_token,)
+        
+#         employee_records =  get_employee_record(access_token,employee_email)
+#         employee_id = employee_records['employee_zoho_id']
 
-#     if not leave_record_id: return {"error": "leave_record_id required. Call get_leave_records first."}
+#         logger.info(f"[Tool] employee_id:{employee_id}")
+#         leave_records= get_leave_records(access_token,employee_id)['leave_records']
+
+#         return {"error": "leave_record_id required. Call get_leave_records first."}
 #     leave_record_id = str(leave_record_id).strip().strip('"')
+#     logger.info(f"[Tool] leave record id {leave_record_id}")
 #     if not access_token:    return {"error": "Zoho access token missing."}
 
 #     try:
 #         async with httpx.AsyncClient(timeout=20) as client:
 #             resp = await client.patch(
 #                 f"{ZOHO_BASE}/people/api/v2/leavetracker/leaves/records/cancel/{leave_record_id}",
-#                 headers=auth_header(access_token),
-#                 json={"reason": cancellation_reason},
+#                 #headers=auth_header(access_token),
+#                 headers={
+#                     "Authorization": f"Zoho-oauthtoken {access_token}",
+#                     # "Content-Type": "application/json",
+#                     # "Accept": "application/json"
+#                 }
+#                # json={"reason": cancellation_reason},
+#             #    params={
+#             #     "reason": cancellation_reason
+#             #     },
 #             )
-#         logger.info(f"[Tool] Cancel leave status={resp.status_code} body={resp.text[:400]}")
+#             logger.info(f"[Tool] response : {resp.request.headers}")
+#             logger.info(f"[Tool]response  :{resp.request.content}")
+#         logger.info(f"[Tool] Cancel leave status={resp.status_code} body={resp.text[:400]} response: {resp.json()}")
 #         data = resp.json()
 
 #         message = data.get("response", {}).get("message", "")
@@ -367,7 +407,21 @@ Endpoints used (all India region — zoho.in):
   4. POST /people/api/forms/json/leave/insertRecord  — apply leave
   5. PATCH /people/api/v2/leavetracker/leaves/records/cancel/{id} — cancel leave
 """
+"""
+mcp_server/server.py  —  Zoho People API Tools for PD HR Chatbot
+Region   : India (people.zoho.in)
+Transport: SSE (Windows compatible)
+Author   : Prodevans Technologies Pvt. Ltd.
 
+Endpoints used (all India region — zoho.in):
+  1. GET  /api/forms/P_EmployeeView/records       — get employee record
+  2. GET  /people/api/v2/leavetracker/reports/user — get leave balance
+  3. GET  /people/api/v2/leavetracker/leaves/records — get leave records
+  4. POST /people/api/forms/json/leave/insertRecord  — apply leave
+  5. PATCH /people/api/v2/leavetracker/leaves/records/cancel/{id} — cancel leave
+"""
+
+import os
 import json
 import sys
 from pathlib import Path
@@ -386,7 +440,7 @@ from utils.logger import get_logger
 logger = get_logger("mcp_server")
 mcp    = FastMCP("pd-hr-chatbot", port=8001)
 
-ZOHO_BASE = "https://people.zoho.in"  #put in .env file
+ZOHO_BASE = os.getenv("ZOHO_BASE_URL", "https://people.zoho.in")
 
 
 def auth_header(token: str) -> dict:
@@ -423,39 +477,32 @@ async def get_employee_record(
     try:
         async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.get(
-                f"{ZOHO_BASE}/api/forms/employee/getRecords",
+                f"{ZOHO_BASE}/api/forms/P_EmployeeView/records",
                 headers=auth_header(access_token),
                 params={
                     "searchColumn": "EMPLOYEEMAILALIAS",
                     "searchValue":  employee_email,
                     "limit":        "1",
-                    "sIndex":       "1",
                 },
             )
         logger.info(f"[Tool] Employee status={resp.status_code} body={resp.text[:400]}")
         data = resp.json()
 
-        # Check for errors
-        response = data.get("response", {})
-        if response.get("status") != 0:
-            errors = response.get("errors", {})
+        # Handle error dict response
+        if isinstance(data, dict):
+            errors = data.get("response", {}).get("errors", {})
             if isinstance(errors, dict) and errors.get("code") in [7218, 401]:
                 return {"error": "Invalid OAuth scope or expired token."}
-            return {"error": f"Zoho error: {response.get('message', 'Unknown error')}"}
+            return {"error": f"Zoho error: {data.get('response', {}).get('message', 'Unknown error')}"}
 
-        result = response.get("result", [])
-        if not result:
+        # P_EmployeeView returns plain list
+        if not isinstance(data, list) or not data:
             return {"error": f"No employee found with email {employee_email}."}
 
-        # result is list of dicts like [{"46224000012838028": [{...record...}]}]
-        first_item = result[0]
-        zoho_id = list(first_item.keys())[0]
-        rec_list = first_item[zoho_id]
-        rec = rec_list[0] if rec_list else {}
+        rec = data[0]
+        employee_zoho_id = str(rec.get("recordId", ""))
 
-        employee_zoho_id = str(rec.get("Zoho_ID", zoho_id))
-
-        logger.info(f"[Tool] get_employee_record success | zoho_id={employee_zoho_id} | name={rec.get('Full_Name', '')}")
+        logger.info(f"[Tool] get_employee_record success | zoho_id={employee_zoho_id} | name={rec.get('Full Name', '')}")
 
         return {
             "employee_zoho_id": employee_zoho_id,
@@ -711,40 +758,30 @@ async def cancel_leave(
 
     Args:
         access_token        (str): Zoho OAuth access token.
-        employee_email      (str):employee email
+        employee_email      (str): employee email
         leave_record_id     (str): Leave record ID from get_leave_records.
         cancellation_reason (str): Reason for cancellation.
     """
     logger.info(f"[Tool] cancel_leave | leave_record_id={leave_record_id}")
     logger.info(f"[Tool] leave record id {leave_record_id}")
-    if not leave_record_id: 
-        # get_leave_records(access_token,)
-        
-        employee_records =  get_employee_record(access_token,employee_email)
+    if not leave_record_id:
+        employee_records = await get_employee_record(access_token, employee_email)
         employee_id = employee_records['employee_zoho_id']
-
         logger.info(f"[Tool] employee_id:{employee_id}")
-        leave_records= get_leave_records(access_token,employee_id)['leave_records']
-
+        leave_records = await get_leave_records(access_token, employee_id)
         return {"error": "leave_record_id required. Call get_leave_records first."}
+
     leave_record_id = str(leave_record_id).strip().strip('"')
     logger.info(f"[Tool] leave record id {leave_record_id}")
-    if not access_token:    return {"error": "Zoho access token missing."}
+    if not access_token: return {"error": "Zoho access token missing."}
 
     try:
         async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.patch(
                 f"{ZOHO_BASE}/people/api/v2/leavetracker/leaves/records/cancel/{leave_record_id}",
-                #headers=auth_header(access_token),
                 headers={
                     "Authorization": f"Zoho-oauthtoken {access_token}",
-                    # "Content-Type": "application/json",
-                    # "Accept": "application/json"
-                }
-               # json={"reason": cancellation_reason},
-            #    params={
-            #     "reason": cancellation_reason
-            #     },
+                },
             )
             logger.info(f"[Tool] response : {resp.request.headers}")
             logger.info(f"[Tool]response  :{resp.request.content}")
