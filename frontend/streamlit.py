@@ -1,10 +1,3 @@
-"""
-frontend/streamlit.py
-=====================
-PD HR Chatbot — Qwery-style UI
-Dark magenta sidebar · Workspace selector · Centered chat · Search bar with mic
-"""
-
 import os
 import sys
 import json

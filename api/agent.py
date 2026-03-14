@@ -1,12 +1,3 @@
-"""
-api/agent.py
-============
-Agent Executor for PD HR Chatbot.
-Supports Groq, Ollama, OpenAI — switch via LLM_PROVIDER in .env
-Connects to MCP Server via SSE transport.
-access_token is NEVER sent to LLM — injected in Python automatically.
-"""
-
 import json
 from typing import AsyncGenerator
 

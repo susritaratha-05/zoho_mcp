@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -31,6 +30,7 @@ class Settings:
     zoho_access_token:  str = os.getenv("ZOHO_ACCESS_TOKEN",  "")
     zoho_redirect_uri:  str = os.getenv("ZOHO_REDIRECT_URI",  "https://www.zoho.com/people")
     zoho_token_url:     str = os.getenv("ZOHO_TOKEN_URL",     "https://accounts.zoho.in/oauth/v2/token")
+    zoho_base_url:      str = os.getenv("ZOHO_BASE_URL",      "https://people.zoho.in")
 
     # ── MCP Server ────────────────────────────────────────────────────────────
     mcp_server_url: str = os.getenv("MCP_SERVER_URL", "http://localhost:8001/sse")
